@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a World App Mini App built with Next.js 15. Mini apps are native-like applications that run within the World App ecosystem, using wallet-based authentication via MiniKit.
 
+## Documentation
+
+`llms-full.txt` contains comprehensive World Mini App documentation in [llmstxt.org](https://llmstxt.org) standard format. Reference this file for MiniKit APIs, World ID integration, and mini app development patterns.
+
 ## Commands
 
 ```bash

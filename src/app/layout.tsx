@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'World Human Substrate',
-  description: 'World Human Substrate Mini App',
+  title: 'World Substrate',
+  description: 'World Substrate Mini App',
 };
 
 export default async function RootLayout({
