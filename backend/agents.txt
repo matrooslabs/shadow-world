@@ -1,0 +1,2 @@
+# Base prompt for all agents
+# Edit this file to add instructions that will be prepended to every agent's system prompt.

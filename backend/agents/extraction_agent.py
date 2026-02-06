@@ -14,6 +14,7 @@ class ExtractionState(TypedDict):
     interests: list[str]
     communication_style: str
     values: list[str]
+    sample_tweets: list[str]
     summary: str
     progress: int
     error: str | None
@@ -40,6 +41,7 @@ class ExtractionAgent:
         workflow.add_node("extract_interests", self._extract_interests)
         workflow.add_node("extract_communication_style", self._extract_communication_style)
         workflow.add_node("extract_values", self._extract_values)
+        workflow.add_node("select_sample_tweets", self._select_sample_tweets)
         workflow.add_node("generate_summary", self._generate_summary)
 
         # Add edges
@@ -48,7 +50,8 @@ class ExtractionAgent:
         workflow.add_edge("extract_traits", "extract_interests")
         workflow.add_edge("extract_interests", "extract_communication_style")
         workflow.add_edge("extract_communication_style", "extract_values")
-        workflow.add_edge("extract_values", "generate_summary")
+        workflow.add_edge("extract_values", "select_sample_tweets")
+        workflow.add_edge("select_sample_tweets", "generate_summary")
         workflow.add_edge("generate_summary", END)
 
         return workflow.compile()
@@ -145,7 +148,28 @@ Look for what they advocate for, criticize, or repeatedly emphasize."""),
         except json.JSONDecodeError:
             values = []
 
-        return {**state, "values": values, "progress": 90}
+        return {**state, "values": values, "progress": 80}
+
+    def _select_sample_tweets(self, state: ExtractionState) -> ExtractionState:
+        """Select representative sample tweets that best capture language style."""
+        messages = [
+            SystemMessage(content="""You are an expert at analyzing writing style and voice.
+From the following tweets, select 5-10 that best represent this person's unique language style.
+Pick tweets that showcase their distinctive phrasing, slang, humor, sentence structure, and tone.
+Prefer tweets that are original thoughts (not replies or retweets) and feel most "them".
+Return ONLY a JSON array of the selected tweet strings, exactly as written."""),
+            HumanMessage(content=state["tweets_text"][:8000]),
+        ]
+
+        response = self.llm.invoke(messages)
+        try:
+            sample_tweets = json.loads(response.content)
+            if not isinstance(sample_tweets, list):
+                sample_tweets = []
+        except json.JSONDecodeError:
+            sample_tweets = []
+
+        return {**state, "sample_tweets": sample_tweets, "progress": 90}
 
     def _generate_summary(self, state: ExtractionState) -> ExtractionState:
         """Generate a cohesive personality summary."""
@@ -181,6 +205,7 @@ Write in third person, as if describing someone to a friend."""),
             "interests": [],
             "communication_style": "",
             "values": [],
+            "sample_tweets": [],
             "summary": "",
             "progress": 0,
             "error": None,
@@ -193,6 +218,7 @@ Write in third person, as if describing someone to a friend."""),
                 "interests": result["interests"],
                 "communication_style": result["communication_style"],
                 "values": result["values"],
+                "sample_tweets": result["sample_tweets"],
                 "summary": result["summary"],
             }
         except Exception as e:

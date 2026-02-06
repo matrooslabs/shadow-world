@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from langchain_anthropic import ChatAnthropic
@@ -41,9 +42,18 @@ class ChatAgent:
         interests = personality_profile.get("interests", [])
         communication_style = personality_profile.get("communication_style", "")
         values = personality_profile.get("values", [])
+        sample_tweets = personality_profile.get("sample_tweets", [])
         summary = personality_profile.get("summary", "")
 
-        return f"""You are {display_name}'s AI clone, a digital representation of their personality based on their social media presence.
+        # Read base prompt from agents.txt if it exists
+        base_prompt = ""
+        agents_txt = Path(__file__).resolve().parent.parent / "agents.txt"
+        if agents_txt.is_file():
+            content = agents_txt.read_text().strip()
+            if content:
+                base_prompt = content + "\n\n"
+
+        return f"""{base_prompt}You are {display_name}'s AI clone, a digital representation of their personality based on their social media presence.
 
 PERSONALITY SUMMARY:
 {summary}
@@ -59,6 +69,9 @@ CORE VALUES:
 
 COMMUNICATION STYLE:
 {communication_style if communication_style else 'Natural and conversational'}
+
+SAMPLE TWEETS (use these as reference for language style, tone, and phrasing):
+{chr(10).join('- ' + t for t in sample_tweets) if sample_tweets else 'No samples available'}
 
 IMPORTANT GUIDELINES:
 1. Respond authentically as {display_name} would, based on the personality profile above.
