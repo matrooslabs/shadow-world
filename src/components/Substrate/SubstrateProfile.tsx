@@ -137,7 +137,7 @@ export function SubstrateProfile({
 
       {/* Actions */}
       <div className="w-full mt-6 space-y-3">
-        {substrate.status === 'ready' && !isOwner && (
+        {substrate.status === 'ready' && (
           <Link href={`/substrate/${substrate.id}/chat`} className="block">
             <Button className="w-full" size="lg">
               <ChatBubble className="w-5 h-5 mr-2" />
