@@ -1,19 +1,30 @@
 'use client';
 
-import { Page } from '@/components/PageLayout';
 import { handleOAuthCallback } from '@/lib/substrate-api';
-import { TopBar } from '@worldcoin/mini-apps-ui-kit-react';
 import { CheckCircle, WarningCircle } from 'iconoir-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function OAuthCallbackPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
   const [substrateId, setSubstrateId] = useState<string | null>(null);
+
+  // Get the app ID from environment
+  const appId = process.env.NEXT_PUBLIC_APP_ID;
+
+  const getWorldAppUrl = (path: string) => {
+    // World App deep link format
+    const encodedPath = encodeURIComponent(path);
+    return `https://worldcoin.org/mini-app?app_id=${appId}&path=${encodedPath}`;
+  };
+
+  const redirectToWorldApp = (path: string) => {
+    const worldAppUrl = getWorldAppUrl(path);
+    window.location.href = worldAppUrl;
+  };
 
   const processCallback = useCallback(async () => {
     const code = searchParams.get('code');
@@ -55,69 +66,63 @@ export default function OAuthCallbackPage() {
 
     setStatus('success');
 
-    // Redirect back to create page after a short delay
+    // Redirect back to World App after a short delay
     setTimeout(() => {
-      router.push(`/create?edit=${substId}`);
-    }, 2000);
-  }, [searchParams, router]);
+      redirectToWorldApp(`/create?edit=${substId}`);
+    }, 1500);
+  }, [searchParams]);
 
   useEffect(() => {
     processCallback();
   }, [processCallback]);
 
   return (
-    <>
-      <Page.Header className="p-0">
-        <TopBar title="Connecting Account" />
-      </Page.Header>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+      {status === 'loading' && (
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Connecting your account...
+          </h2>
+          <p className="text-gray-600 mt-2">Please wait</p>
+        </div>
+      )}
 
-      <Page.Main className="flex flex-col items-center justify-center">
-        {status === 'loading' && (
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Connecting your account...
-            </h2>
-            <p className="text-gray-600 mt-2">Please wait</p>
+      {status === 'success' && (
+        <div className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-        )}
+          <h2 className="text-lg font-semibold text-gray-900">
+            Account Connected!
+          </h2>
+          <p className="text-gray-600 mt-2">Returning to World App...</p>
+          <button
+            onClick={() => redirectToWorldApp(`/create?edit=${substrateId}`)}
+            className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium"
+          >
+            Return to App
+          </button>
+        </div>
+      )}
 
-        {status === 'success' && (
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Account Connected!
-            </h2>
-            <p className="text-gray-600 mt-2">Redirecting you back...</p>
+      {status === 'error' && (
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <WarningCircle className="w-8 h-8 text-red-600" />
           </div>
-        )}
-
-        {status === 'error' && (
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Connection Failed
-            </h2>
-            <p className="text-red-600 mt-2">{error}</p>
-            <button
-              onClick={() => {
-                if (substrateId) {
-                  router.push(`/create?edit=${substrateId}`);
-                } else {
-                  router.push('/create');
-                }
-              }}
-              className="mt-4 text-blue-600 underline"
-            >
-              Go back and try again
-            </button>
-          </div>
-        )}
-      </Page.Main>
-    </>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Connection Failed
+          </h2>
+          <p className="text-red-600 mt-2">{error}</p>
+          <button
+            onClick={() => redirectToWorldApp(substrateId ? `/create?edit=${substrateId}` : '/create')}
+            className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium"
+          >
+            Return to App
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
