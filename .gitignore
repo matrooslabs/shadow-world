@@ -51,6 +51,7 @@ backend/*.pyc
 backend/.venv/
 backend/venv/
 backend/.env
+backend/*.db
 
 # Prisma
 prisma/dev.db
