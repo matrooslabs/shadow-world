@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents World App authenticated users
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  username      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // User's own substrates (references to backend)
+  substrates SubstrateRef[]
+  // Endorsements this user has given
+  endorsements Endorsement[]
+}
+
+// SubstrateRef - local reference to substrates stored in Python backend
+// We store minimal data here; full data lives in the backend
+model SubstrateRef {
+  id              String   @id // Same ID as in Python backend
+  ownerWallet     String
+  displayName     String
+  createdAt       DateTime @default(now())
+
+  owner        User          @relation(fields: [ownerWallet], references: [walletAddress])
+  endorsements Endorsement[]
+
+  @@index([ownerWallet])
+}
+
+// Endorsement - World ID verified endorsements of substrates
+model Endorsement {
+  id                String   @id @default(cuid())
+  substrateId       String
+  endorserWallet    String
+  nullifierHash     String   @unique // Ensures one endorsement per World ID
+  merkleRoot        String
+  proof             String
+  verificationLevel String // "device" or "orb"
+  createdAt         DateTime @default(now())
+
+  substrate SubstrateRef @relation(fields: [substrateId], references: [id])
+  endorser  User         @relation(fields: [endorserWallet], references: [walletAddress])
+
+  @@index([substrateId])
+  @@index([endorserWallet])
+}
