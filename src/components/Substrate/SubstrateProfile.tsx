@@ -1,9 +1,11 @@
 'use client';
 
 import { Substrate } from '@/lib/substrate-api';
+import { AddKnowledgeModal } from '@/components/Knowledge';
 import { Button, CircularIcon } from '@worldcoin/mini-apps-ui-kit-react';
-import { ChatBubble, User, BadgeCheck } from 'iconoir-react';
+import { ChatBubble, User, BadgeCheck, Book } from 'iconoir-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
 interface SubstrateProfileProps {
   substrate: Substrate;
@@ -16,6 +18,8 @@ export function SubstrateProfile({
   isVerified,
   isOwner,
 }: SubstrateProfileProps) {
+  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
+
   return (
     <div className="flex flex-col items-center">
       {/* Avatar */}
@@ -146,6 +150,18 @@ export function SubstrateProfile({
           </Link>
         )}
 
+        {isOwner && substrate.status === 'ready' && (
+          <Button
+            className="w-full"
+            size="lg"
+            variant="secondary"
+            onClick={() => setShowKnowledgeModal(true)}
+          >
+            <Book className="w-5 h-5 mr-2" />
+            Add Knowledge
+          </Button>
+        )}
+
         {isOwner && substrate.status === 'pending' && (
           <Link href={`/create?edit=${substrate.id}`} className="block">
             <Button className="w-full" size="lg" variant="secondary">
@@ -154,6 +170,16 @@ export function SubstrateProfile({
           </Link>
         )}
       </div>
+
+      {showKnowledgeModal && (
+        <AddKnowledgeModal
+          onClose={() => setShowKnowledgeModal(false)}
+          onSubmit={(data) => {
+            console.log('Knowledge submitted:', data);
+            setShowKnowledgeModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
