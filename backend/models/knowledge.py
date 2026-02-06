@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum as PyEnum
-from sqlalchemy import Column, String, DateTime, Enum, Text, Integer, ForeignKey
+from sqlalchemy import Column, String, DateTime, Enum, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from db import Base
 import uuid
@@ -26,7 +26,7 @@ class Knowledge(Base):
     source_url = Column(String, nullable=True)
     title = Column(String, nullable=True)
     content = Column(Text, nullable=True)
-    chunk_count = Column(Integer, default=0)
+    elevenlabs_doc_id = Column(String, nullable=True)
     status = Column(Enum(KnowledgeStatus), default=KnowledgeStatus.PROCESSING)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -44,7 +44,7 @@ class Knowledge(Base):
             "source_url": self.source_url,
             "title": self.title,
             "content": content_preview,
-            "chunk_count": self.chunk_count,
+            "elevenlabs_doc_id": self.elevenlabs_doc_id,
             "status": self.status.value if self.status else None,
             "error_message": self.error_message,
             "created_at": self.created_at.isoformat() if self.created_at else None,

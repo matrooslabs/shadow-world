@@ -11,6 +11,7 @@ export interface Substrate {
   avatar_url?: string;
   personality_profile?: PersonalityProfile;
   status: SubstrateStatus;
+  agent_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,21 +32,6 @@ export interface SocialAccount {
   platform: 'twitter';
   username: string;
   connected_at: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  session_id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  created_at: string;
-}
-
-export interface ChatSession {
-  id: string;
-  substrate_id: string;
-  visitor_wallet: string;
-  created_at: string;
 }
 
 // API Response types
@@ -237,48 +223,19 @@ export async function getSocialAccounts(substrateId: string): Promise<ApiRespons
   }
 }
 
-// Chat - Send a message
-export async function sendChatMessage(
-  substrateId: string,
-  visitorWallet: string,
-  message: string
-): Promise<ApiResponse<ChatMessage>> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/substrates/${substrateId}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitor_wallet: visitorWallet, message }),
-    });
-
-    if (!response.ok) {
-      try {
-        const error = await response.json();
-        return { error: error.detail || 'Failed to send message' };
-      } catch {
-        return { error: `Request failed (${response.status})` };
-      }
-    }
-
-    return { data: await response.json() };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Network error' };
-  }
-}
-
-// Chat - Get history
-export async function getChatHistory(
-  substrateId: string,
-  visitorWallet: string
-): Promise<ApiResponse<ChatMessage[]>> {
+// Agent - Get signed URL for ElevenLabs conversation
+export async function getAgentSignedUrl(
+  substrateId: string
+): Promise<ApiResponse<{ signed_url: string }>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/substrates/${substrateId}/chat/history?visitor_wallet=${encodeURIComponent(visitorWallet)}`
+      `${API_BASE_URL}/substrates/${substrateId}/agent/signed-url`
     );
 
     if (!response.ok) {
       try {
         const error = await response.json();
-        return { error: error.detail || 'Failed to fetch chat history' };
+        return { error: error.detail || 'Failed to get signed URL' };
       } catch {
         return { error: `Request failed (${response.status})` };
       }
@@ -298,7 +255,7 @@ export interface KnowledgeEntry {
   source_url?: string | null;
   title?: string | null;
   content?: string | null;
-  chunk_count: number;
+  elevenlabs_doc_id?: string | null;
   status: 'processing' | 'ready' | 'failed';
   error_message?: string | null;
   created_at: string;

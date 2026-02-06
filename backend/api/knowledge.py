@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -5,8 +7,9 @@ from pydantic import BaseModel
 from typing import Optional
 from db import get_db
 from models import Substrate, Knowledge, KnowledgeSourceType, KnowledgeStatus
-from vectorstore import chunk_text, add_knowledge_chunks, delete_knowledge_chunks
-from fetchers import fetch_url_content
+from services import AgentService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["knowledge"])
 
@@ -24,7 +27,7 @@ class KnowledgeResponse(BaseModel):
     source_url: Optional[str] = None
     title: Optional[str] = None
     content: Optional[str] = None
-    chunk_count: int
+    elevenlabs_doc_id: Optional[str] = None
     status: str
     error_message: Optional[str] = None
     created_at: str
@@ -34,44 +37,56 @@ class KnowledgeResponse(BaseModel):
         from_attributes = True
 
 
-async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str, db: AsyncSession):
-    """Background task to fetch URL content and vectorize it."""
+async def _process_knowledge(
+    knowledge_id: str,
+    substrate_id: str,
+    source_type: KnowledgeSourceType,
+    content: str,
+    title: Optional[str],
+    db: AsyncSession,
+):
+    """Background task to add knowledge via ElevenLabs KB API."""
     result = await db.execute(
         select(Knowledge).where(Knowledge.id == knowledge_id)
     )
     knowledge = result.scalar_one_or_none()
-
     if not knowledge:
         return
 
+    # Get substrate to check for agent_id
+    sub_result = await db.execute(
+        select(Substrate).where(Substrate.id == substrate_id)
+    )
+    substrate = sub_result.scalar_one_or_none()
+
     try:
-        fetched = await fetch_url_content(url)
+        agent_service = AgentService()
 
-        if fetched["error"]:
-            knowledge.status = KnowledgeStatus.FAILED
-            knowledge.error_message = fetched["error"]
-            await db.commit()
-            return
+        if source_type == KnowledgeSourceType.URL:
+            doc_id = agent_service.add_knowledge_from_url(
+                url=content,
+                name=title or content,
+            )
+        else:
+            doc_id = agent_service.add_knowledge_from_text(
+                text=content,
+                name=title or "Text document",
+            )
 
-        if not fetched["content"].strip():
-            knowledge.status = KnowledgeStatus.FAILED
-            knowledge.error_message = "No content extracted from URL"
-            await db.commit()
-            return
-
-        knowledge.content = fetched["content"]
-        if fetched["title"] and not knowledge.title:
-            knowledge.title = fetched["title"]
-
-        # Chunk and vectorize
-        chunks = chunk_text(fetched["content"])
-        count = add_knowledge_chunks(substrate_id, knowledge_id, chunks)
-
-        knowledge.chunk_count = count
+        knowledge.elevenlabs_doc_id = doc_id
         knowledge.status = KnowledgeStatus.READY
+
+        # Associate document with the agent if it exists
+        if substrate and substrate.agent_id:
+            try:
+                agent_service.add_knowledge_to_agent(substrate.agent_id, doc_id)
+            except Exception as e:
+                logger.error(f"Failed to associate doc {doc_id} with agent {substrate.agent_id}: {e}")
+
         await db.commit()
 
     except Exception as e:
+        logger.error(f"Failed to process knowledge {knowledge_id}: {e}")
         knowledge.status = KnowledgeStatus.FAILED
         knowledge.error_message = str(e)
         await db.commit()
@@ -84,7 +99,7 @@ async def add_knowledge(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    """Add a knowledge entry to a substrate."""
+    """Add a knowledge entry to a substrate via ElevenLabs Knowledge Base."""
     # Verify substrate exists
     result = await db.execute(
         select(Substrate).where(Substrate.id == substrate_id)
@@ -104,25 +119,18 @@ async def add_knowledge(
         source_type=source_type,
         source_url=request.content if source_type == KnowledgeSourceType.URL else None,
         title=request.title,
+        content=request.content if source_type == KnowledgeSourceType.TEXT else None,
+        status=KnowledgeStatus.PROCESSING,
     )
-
-    if source_type == KnowledgeSourceType.TEXT:
-        # Process text inline — chunk and vectorize immediately
-        knowledge.content = request.content
-        chunks = chunk_text(request.content)
-        count = add_knowledge_chunks(substrate_id, knowledge.id, chunks)
-        knowledge.chunk_count = count
-        knowledge.status = KnowledgeStatus.READY
-    else:
-        # URL: process in background
-        knowledge.status = KnowledgeStatus.PROCESSING
 
     db.add(knowledge)
     await db.commit()
     await db.refresh(knowledge)
 
-    if source_type == KnowledgeSourceType.URL:
-        background_tasks.add_task(_process_url_knowledge, knowledge.id, request.content, substrate_id, db)
+    # Process in background (both URL and text go through ElevenLabs API)
+    background_tasks.add_task(
+        _process_knowledge, knowledge.id, substrate_id, source_type, request.content, request.title, db
+    )
 
     return KnowledgeResponse(**knowledge.to_dict())
 
@@ -156,7 +164,7 @@ async def delete_knowledge(
     knowledge_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a knowledge entry and its ChromaDB vectors."""
+    """Delete a knowledge entry and its ElevenLabs KB document."""
     result = await db.execute(
         select(Knowledge).where(
             Knowledge.id == knowledge_id,
@@ -167,8 +175,13 @@ async def delete_knowledge(
     if not knowledge:
         raise HTTPException(status_code=404, detail="Knowledge entry not found")
 
-    # Delete from ChromaDB
-    delete_knowledge_chunks(knowledge_id)
+    # Delete from ElevenLabs KB
+    if knowledge.elevenlabs_doc_id:
+        try:
+            agent_service = AgentService()
+            agent_service.delete_knowledge_document(knowledge.elevenlabs_doc_id)
+        except Exception as e:
+            logger.warning(f"Failed to delete ElevenLabs doc {knowledge.elevenlabs_doc_id}: {e}")
 
     # Delete from DB
     await db.delete(knowledge)
