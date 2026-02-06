@@ -1,6 +1,6 @@
 'use client';
 
-import { Substrate } from '@/lib/substrate-api';
+import { Substrate, addKnowledge, uploadVoiceSample } from '@/lib/substrate-api';
 import { AddKnowledgeModal } from '@/components/Knowledge';
 import { Button, CircularIcon } from '@worldcoin/mini-apps-ui-kit-react';
 import { ChatBubble, User, BadgeCheck, Book } from 'iconoir-react';
@@ -174,8 +174,42 @@ export function SubstrateProfile({
       {showKnowledgeModal && (
         <AddKnowledgeModal
           onClose={() => setShowKnowledgeModal(false)}
-          onSubmit={(data) => {
-            console.log('Knowledge submitted:', data);
+          onSubmit={async (data) => {
+            const errors: string[] = [];
+
+            // Submit URLs in parallel
+            const urlResults = await Promise.allSettled(
+              data.urls.map((url) =>
+                addKnowledge(substrate.id, { source_type: 'url', content: url })
+              )
+            );
+            urlResults.forEach((result, i) => {
+              if (result.status === 'fulfilled' && result.value.error) {
+                errors.push(`URL "${data.urls[i]}": ${result.value.error}`);
+              } else if (result.status === 'rejected') {
+                errors.push(`URL "${data.urls[i]}": ${result.reason?.message || 'Failed'}`);
+              }
+            });
+
+            // Submit text as a knowledge entry
+            if (data.text) {
+              const result = await addKnowledge(substrate.id, {
+                source_type: 'text',
+                content: data.text,
+              });
+              if (result.error) errors.push(`Text: ${result.error}`);
+            }
+
+            // Upload voice sample
+            if (data.voiceBlob) {
+              const result = await uploadVoiceSample(substrate.id, data.voiceBlob);
+              if (result.error) errors.push(`Voice: ${result.error}`);
+            }
+
+            if (errors.length > 0) {
+              throw new Error(errors.join('\n'));
+            }
+
             setShowKnowledgeModal(false);
           }}
         />

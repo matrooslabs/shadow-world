@@ -2,12 +2,13 @@
 
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState } from 'react';
-import { Xmark, Plus, Link as LinkIcon, Text } from 'iconoir-react';
+import { Xmark, Plus, Link as LinkIcon, Text, Microphone } from 'iconoir-react';
+import { VoiceRecorder } from './VoiceRecorder';
 
-type Tab = 'url' | 'text';
+type Tab = 'url' | 'text' | 'voice';
 
 interface AddKnowledgeModalProps {
-  onSubmit: (data: { urls: string[]; text: string }) => void;
+  onSubmit: (data: { urls: string[]; text: string; voiceBlob?: Blob }) => Promise<void>;
   onClose: () => void;
 }
 
@@ -16,16 +17,26 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
   const [urlInput, setUrlInput] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [text, setText] = useState('');
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const inputClass =
     'w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
 
   const addUrl = () => {
     const trimmed = urlInput.trim();
-    if (trimmed && !urls.includes(trimmed)) {
-      setUrls([...urls, trimmed]);
-      setUrlInput('');
+    if (!trimmed) return;
+    try {
+      new URL(trimmed);
+    } catch {
+      setError('Please enter a valid URL');
+      return;
     }
+    if (urls.includes(trimmed)) return;
+    setError(null);
+    setUrls([...urls, trimmed]);
+    setUrlInput('');
   };
 
   const removeUrl = (index: number) => {
@@ -39,16 +50,24 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
     }
   };
 
-  const handleSubmit = () => {
-    onSubmit({ urls, text: text.trim() });
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit({ urls, text: text.trim(), voiceBlob: voiceBlob ?? undefined });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add knowledge');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const hasContent = urls.length > 0 || text.trim().length > 0;
+  const hasContent = urls.length > 0 || text.trim().length > 0 || voiceBlob !== null;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      onClick={onClose}
+      onClick={() => { if (!isSubmitting) onClose(); }}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" />
@@ -63,6 +82,7 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
           <h2 className="text-lg font-semibold text-gray-900">Add Knowledge</h2>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="p-1 rounded-full hover:bg-gray-100 transition-colors"
           >
             <Xmark className="w-5 h-5 text-gray-500" />
@@ -72,7 +92,8 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
         {/* Tabs */}
         <div className="flex border-b border-gray-100">
           <button
-            onClick={() => setActiveTab('url')}
+            onClick={() => { setError(null); setActiveTab('url'); }}
+            disabled={isSubmitting}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
               activeTab === 'url'
                 ? 'text-blue-600 border-b-2 border-blue-600'
@@ -83,7 +104,8 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
             URL
           </button>
           <button
-            onClick={() => setActiveTab('text')}
+            onClick={() => { setError(null); setActiveTab('text'); }}
+            disabled={isSubmitting}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
               activeTab === 'text'
                 ? 'text-blue-600 border-b-2 border-blue-600'
@@ -93,10 +115,28 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
             <Text className="w-4 h-4" />
             Text
           </button>
+          <button
+            onClick={() => { setError(null); setActiveTab('voice'); }}
+            disabled={isSubmitting}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'voice'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Microphone className="w-4 h-4" />
+            Voice
+          </button>
         </div>
 
         {/* Content */}
         <div className="p-4 overflow-y-auto flex-1">
+          {error && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {activeTab === 'url' && (
             <div className="space-y-3">
               <div className="flex gap-2">
@@ -106,11 +146,12 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
                   onChange={(e) => setUrlInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="https://example.com/article"
-                  className={inputClass + ' flex-1'}
+                  disabled={isSubmitting}
+                  className={inputClass + ' flex-1 disabled:bg-gray-100'}
                 />
                 <button
                   onClick={addUrl}
-                  disabled={!urlInput.trim()}
+                  disabled={!urlInput.trim() || isSubmitting}
                   className="px-3 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   <Plus className="w-5 h-5" />
@@ -130,6 +171,7 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
                       </span>
                       <button
                         onClick={() => removeUrl(index)}
+                        disabled={isSubmitting}
                         className="p-1 rounded-full hover:bg-gray-200 transition-colors shrink-0"
                       >
                         <Xmark className="w-4 h-4 text-gray-500" />
@@ -154,12 +196,21 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Paste or type text content for your agent to learn from..."
                 rows={8}
-                className={inputClass + ' resize-none'}
+                disabled={isSubmitting}
+                className={inputClass + ' resize-none disabled:bg-gray-100'}
               />
               <p className="text-xs text-gray-500">
                 Paste raw text, notes, or other content directly.
               </p>
             </div>
+          )}
+
+          {activeTab === 'voice' && (
+            <VoiceRecorder
+              onRecordingComplete={(blob) => setVoiceBlob(blob)}
+              onRecordingClear={() => setVoiceBlob(null)}
+              disabled={isSubmitting}
+            />
           )}
         </div>
 
@@ -167,11 +218,13 @@ export function AddKnowledgeModal({ onSubmit, onClose }: AddKnowledgeModalProps)
         <div className="p-4 border-t border-gray-100">
           <Button
             onClick={handleSubmit}
-            disabled={!hasContent}
+            disabled={!hasContent || isSubmitting}
             className="w-full"
             size="lg"
           >
-            Submit Knowledge
+            {isSubmitting
+              ? (activeTab === 'voice' ? 'Uploading...' : 'Submitting...')
+              : (activeTab === 'voice' ? 'Upload Voice' : 'Submit Knowledge')}
           </Button>
         </div>
       </div>

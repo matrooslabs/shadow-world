@@ -23,8 +23,9 @@ ALLOWED_CONTENT_TYPES = {
     "audio/mp4",
     "audio/x-m4a",
     "audio/m4a",
+    "audio/webm",
 }
-ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a"}
+ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".webm"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 MIN_DURATION_SECONDS = 120  # 2 minutes
 

@@ -68,8 +68,12 @@ export async function createSubstrate(data: {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to create substrate' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to create substrate' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -84,8 +88,12 @@ export async function listSubstrates(): Promise<ApiResponse<Substrate[]>> {
     const response = await fetch(`${API_BASE_URL}/substrates`);
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch substrates' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch substrates' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -103,8 +111,12 @@ export async function getSubstrate(id: string): Promise<ApiResponse<Substrate>> 
       if (response.status === 404) {
         return { error: 'Substrate not found' };
       }
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch substrate' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch substrate' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -119,8 +131,12 @@ export async function getSubstrateStatus(id: string): Promise<ApiResponse<{ stat
     const response = await fetch(`${API_BASE_URL}/substrates/${id}/status`);
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch status' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch status' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -137,8 +153,12 @@ export async function triggerExtraction(id: string): Promise<ApiResponse<{ messa
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to trigger extraction' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to trigger extraction' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -155,8 +175,12 @@ export async function getOAuthUrl(platform: 'twitter', substrateId: string): Pro
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to get OAuth URL' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to get OAuth URL' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -179,8 +203,12 @@ export async function handleOAuthCallback(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'OAuth callback failed' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'OAuth callback failed' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -195,8 +223,12 @@ export async function getSocialAccounts(substrateId: string): Promise<ApiRespons
     const response = await fetch(`${API_BASE_URL}/substrates/${substrateId}/social-accounts`);
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch social accounts' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch social accounts' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -219,8 +251,12 @@ export async function sendChatMessage(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to send message' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to send message' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -240,8 +276,128 @@ export async function getChatHistory(
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch chat history' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch chat history' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
+    }
+
+    return { data: await response.json() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Network error' };
+  }
+}
+
+// Knowledge types
+export interface KnowledgeEntry {
+  id: string;
+  substrate_id: string;
+  source_type: 'url' | 'text';
+  source_url?: string | null;
+  title?: string | null;
+  content?: string | null;
+  chunk_count: number;
+  status: 'processing' | 'ready' | 'failed';
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Knowledge - Add a knowledge entry
+export async function addKnowledge(
+  substrateId: string,
+  data: { source_type: 'url' | 'text'; content: string; title?: string }
+): Promise<ApiResponse<KnowledgeEntry>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/substrates/${substrateId}/knowledge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to add knowledge' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
+    }
+
+    return { data: await response.json() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Network error' };
+  }
+}
+
+export async function uploadVoiceSample(
+  substrateId: string,
+  audioBlob: Blob
+): Promise<ApiResponse<{ message: string; voice_status: string }>> {
+  try {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice-sample.webm');
+
+    const response = await fetch(
+      `${API_BASE_URL}/substrates/${substrateId}/voice`,
+      { method: 'POST', body: formData }
+    );
+
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to upload voice sample' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
+    }
+
+    return { data: await response.json() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Network error' };
+  }
+}
+
+// Knowledge - List entries for a substrate
+export async function listKnowledge(substrateId: string): Promise<ApiResponse<KnowledgeEntry[]>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/substrates/${substrateId}/knowledge`);
+
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch knowledge' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
+    }
+
+    return { data: await response.json() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Network error' };
+  }
+}
+
+// Knowledge - Delete an entry
+export async function deleteKnowledge(
+  substrateId: string,
+  knowledgeId: string
+): Promise<ApiResponse<{ status: string; id: string }>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/substrates/${substrateId}/knowledge/${knowledgeId}`,
+      { method: 'DELETE' }
+    );
+
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to delete knowledge' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
@@ -258,8 +414,12 @@ export async function getSubstratesByOwner(walletAddress: string): Promise<ApiRe
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      return { error: error.detail || 'Failed to fetch substrates' };
+      try {
+        const error = await response.json();
+        return { error: error.detail || 'Failed to fetch substrates' };
+      } catch {
+        return { error: `Request failed (${response.status})` };
+      }
     }
 
     return { data: await response.json() };
