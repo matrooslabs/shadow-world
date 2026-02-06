@@ -1,15 +1,15 @@
-# World Substrate
+# Shadowverse
 
-A [World App](https://worldcoin.org/world-app) Mini App for creating AI personality clones ("substrates"). Connect your Twitter account, and the system extracts your personality profile using Claude, provisions a conversational AI agent with that personality, and lets others chat with your clone via text or voice.
+A [World App](https://worldcoin.org/world-app) Mini App for creating AI personality clones ("Shadows"). Connect your Twitter account, and the system extracts your personality profile using Claude, provisions a conversational AI agent with that personality, and lets others chat with your clone via text or voice.
 
 ## How It Works
 
-1. **Create a substrate** — Set a display name and bio
+1. **Create a Shadow** — Set a display name and bio
 2. **Connect Twitter** — OAuth 2.0 links your account and fetches your tweets
 3. **Personality extraction** — Claude analyzes your tweets to build a personality profile (traits, interests, communication style, values)
 4. **AI agent provisioned** — An ElevenLabs Conversational AI agent is created with your personality as its system prompt
-5. **Voice cloning** (optional) — Record a voice sample to give your substrate a custom cloned voice
-6. **Chat** — Anyone can talk to your substrate via text or full-duplex voice
+5. **Voice cloning** (optional) — Record a voice sample to give your Shadow a custom cloned voice
+6. **Chat** — Anyone can talk to your Shadow via text or full-duplex voice
 
 ## Tech Stack
 
@@ -36,8 +36,8 @@ A [World App](https://worldcoin.org/world-app) Mini App for creating AI personal
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-org/world-substrate.git
-cd world-substrate
+git clone https://github.com/your-org/shadow-world.git
+cd shadow-world
 
 # Frontend
 npm install

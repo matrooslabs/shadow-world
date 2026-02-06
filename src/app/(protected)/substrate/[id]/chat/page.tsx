@@ -72,18 +72,18 @@ export default function ChatPage() {
       setIsLoading(true);
       const result = await getSubstrate(id);
       if (result.error || !result.data) {
-        setError('Substrate not found');
+        setError('Shadow not found');
         setIsLoading(false);
         return;
       }
       setSubstrate(result.data);
       if (result.data.status !== 'ready') {
-        setError('This substrate is not ready for chat yet');
+        setError('This Shadow is not ready for chat yet');
         setIsLoading(false);
         return;
       }
       if (!result.data.agent_id) {
-        setError('This substrate does not have an agent configured');
+        setError('This Shadow does not have an agent configured');
         setIsLoading(false);
         return;
       }
@@ -239,7 +239,7 @@ export default function ChatPage() {
                   <p className="text-lg mb-2">Start a conversation</p>
                   <p className="text-sm">
                     Send a message to chat with{' '}
-                    {substrate?.display_name || 'this substrate'}
+                    {substrate?.display_name || 'this Shadow'}
                   </p>
                 </div>
               )}
@@ -252,7 +252,7 @@ export default function ChatPage() {
                   <p className="text-lg mb-2">Listening...</p>
                   <p className="text-sm">
                     Speak to chat with{' '}
-                    {substrate?.display_name || 'this substrate'}
+                    {substrate?.display_name || 'this Shadow'}
                   </p>
                 </div>
               )}
@@ -324,7 +324,7 @@ export default function ChatPage() {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`Message ${substrate?.display_name || 'substrate'}...`}
+                    placeholder={`Message ${substrate?.display_name || 'Shadow'}...`}
                     className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <Button

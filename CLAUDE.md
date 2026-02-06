@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**World Substrate** — a World App Mini App for creating AI personality clones ("substrates"). Users connect social accounts (Twitter), the system extracts a personality profile using Claude, provisions an ElevenLabs Conversational AI agent with that personality, and others can chat with the clone via text or voice.
+**Shadowverse** — a World App Mini App for creating AI personality clones ("Shadows"). Users connect social accounts (Twitter), the system extracts a personality profile using Claude, provisions an ElevenLabs Conversational AI agent with that personality, and others can chat with the clone via text or voice.
 
 Built with Next.js 15 (frontend) + FastAPI (backend), running inside the World App ecosystem with wallet-based auth.
 

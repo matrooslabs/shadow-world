@@ -85,7 +85,7 @@ export default async function ProfilePage() {
         {/* User's Substrates */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Your Substrates</h3>
+            <h3 className="font-semibold text-gray-900">Your Shadows</h3>
             <Link href="/create">
               <Button size="sm" variant="secondary">
                 <Plus className="w-4 h-4 mr-1" />

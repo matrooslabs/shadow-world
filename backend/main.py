@@ -18,8 +18,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Substrate API",
-    description="Backend API for World Substrate Mini App",
+    title="Shadowverse API",
+    description="Backend API for Shadowverse Mini App",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -45,7 +45,7 @@ app.include_router(agent_router)
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {"status": "ok", "service": "substrate-api"}
+    return {"status": "ok", "service": "shadowverse-api"}
 
 
 @app.get("/health")

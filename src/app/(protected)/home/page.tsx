@@ -26,7 +26,7 @@ export default async function Home() {
     <>
       <Page.Header className="p-0">
         <TopBar
-          title="Substrate"
+          title="Shadowverse"
           endAdornment={
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold capitalize">
@@ -45,12 +45,12 @@ export default async function Home() {
           </h1>
           <p className="text-gray-600 mb-6 max-w-sm mx-auto">
             Build an AI version of yourself backed by World ID verification.
-            Let others chat with your substrate.
+            Let others chat with your Shadow.
           </p>
           <Link href="/create" className="inline-block">
             <Button size="lg">
               <Plus className="w-5 h-5 mr-2" />
-              Create Your Substrate
+              Create Your Shadow
             </Button>
           </Link>
         </div>
@@ -100,7 +100,7 @@ export default async function Home() {
           <div className="w-full">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-900">
-                Featured Substrates
+                Featured Shadows
               </h2>
               <Link
                 href="/registry"

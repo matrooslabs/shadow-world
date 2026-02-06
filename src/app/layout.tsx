@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'World Substrate',
-  description: 'World Substrate Mini App',
+  title: 'Shadowverse',
+  description: 'Shadowverse Mini App',
 };
 
 export default async function RootLayout({

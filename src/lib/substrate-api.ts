@@ -56,7 +56,7 @@ export async function createSubstrate(data: {
     if (!response.ok) {
       try {
         const error = await response.json();
-        return { error: error.detail || 'Failed to create substrate' };
+        return { error: error.detail || 'Failed to create Shadow' };
       } catch {
         return { error: `Request failed (${response.status})` };
       }
@@ -95,7 +95,7 @@ export async function getSubstrate(id: string): Promise<ApiResponse<Substrate>> 
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { error: 'Substrate not found' };
+        return { error: 'Shadow not found' };
       }
       try {
         const error = await response.json();

@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
   try {
     const substrateRes = await fetch(`${backendUrl}/substrates/${substrateId}`);
     if (!substrateRes.ok) {
-      return NextResponse.json({ error: 'Substrate not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Shadow not found' }, { status: 404 });
     }
     substrateData = await substrateRes.json();
   } catch {
     return NextResponse.json(
-      { error: 'Failed to fetch substrate information' },
+      { error: 'Failed to fetch Shadow information' },
       { status: 500 }
     );
   }

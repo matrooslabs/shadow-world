@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (!backendRes.ok) {
       const error = await backendRes.json();
       return NextResponse.json(
-        { error: error.detail || 'Failed to create substrate' },
+        { error: error.detail || 'Failed to create Shadow' },
         { status: backendRes.status }
       );
     }

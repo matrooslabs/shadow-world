@@ -36,7 +36,7 @@ export function BasicInfoForm({
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Your substrate's name"
+          placeholder="Your Shadow's name"
           disabled={isLoading}
           className={inputClass}
         />

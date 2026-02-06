@@ -31,7 +31,7 @@ export default async function RegistryPage() {
       <Page.Main className="flex flex-col gap-4 mb-16">
         <div>
           <p className="text-gray-600 text-sm mb-4">
-            Browse verified substrates and chat with AI clones of real people.
+            Browse verified Shadows and chat with AI clones of real people.
           </p>
         </div>
 
@@ -53,10 +53,10 @@ export default async function RegistryPage() {
               </svg>
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">
-              No Substrates Yet
+              No Shadows Yet
             </h3>
             <p className="text-gray-500 text-sm">
-              Be the first to create a substrate!
+              Be the first to create a Shadow!
             </p>
           </div>
         ) : (
@@ -70,7 +70,7 @@ export default async function RegistryPage() {
         {/* Show pending substrates count if any */}
         {substrates.length > readySubstrates.length && (
           <p className="text-center text-sm text-gray-500">
-            {substrates.length - readySubstrates.length} substrate
+            {substrates.length - readySubstrates.length} Shadow
             {substrates.length - readySubstrates.length !== 1 ? 's' : ''} in
             progress...
           </p>

@@ -22,7 +22,7 @@ const steps = [
   'Analyzing communication patterns',
   'Identifying personality traits',
   'Building personality profile',
-  'Finalizing substrate',
+  'Finalizing Shadow',
 ];
 
 export function ExtractionProgress({
@@ -187,7 +187,7 @@ export function ExtractionProgress({
       {status === 'ready' && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
           <p className="text-green-700">
-            Your substrate is ready! People can now chat with your AI clone.
+            Your Shadow is ready! People can now chat with your AI clone.
           </p>
         </div>
       )}

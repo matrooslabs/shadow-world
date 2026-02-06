@@ -119,7 +119,7 @@ export default function CreatePage() {
   };
 
   const stepTitles: Record<Step, string> = {
-    info: 'Create Substrate',
+    info: 'Create Shadow',
     social: 'Connect Accounts',
     extracting: 'Analyzing',
     complete: 'Complete',
@@ -224,14 +224,14 @@ export default function CreatePage() {
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Substrate Created!
+              Shadow Created!
             </h2>
             <p className="text-gray-600 mb-6">
               Your AI clone is ready. Visit your profile to verify it with
               World ID.
             </p>
             <Button onClick={handleViewSubstrate} className="w-full" size="lg">
-              View Your Substrate
+              View Your Shadow
             </Button>
           </div>
         )}
