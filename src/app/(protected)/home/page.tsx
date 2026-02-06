@@ -6,7 +6,7 @@ import { Plus, ArrowRight } from 'iconoir-react';
 import Link from 'next/link';
 
 async function getSubstrates() {
-  const backendUrl = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.SUBSTRATE_API_URL || process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${backendUrl}/substrates?limit=5`, {
       next: { revalidate: 60 },

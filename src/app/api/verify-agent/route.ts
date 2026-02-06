@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify substrate ownership - only the owner can verify their own agent
-  const backendUrl = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.SUBSTRATE_API_URL || process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
   let substrateData: { id: string; owner_wallet: string; display_name: string };
   try {
     const substrateRes = await fetch(`${backendUrl}/substrates/${substrateId}`);

@@ -9,7 +9,7 @@ import { Plus, User } from 'iconoir-react';
 import Link from 'next/link';
 
 async function getUserSubstrates(walletAddress: string): Promise<Substrate[]> {
-  const backendUrl = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.SUBSTRATE_API_URL || process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
   try {
     const res = await fetch(
       `${backendUrl}/substrates?owner_wallet=${encodeURIComponent(walletAddress)}`,

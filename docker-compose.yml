@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: substrate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-substrate_dev}
+      POSTGRES_DB: substrate
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U substrate -d substrate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql://substrate:${POSTGRES_PASSWORD:-substrate_dev}@postgres:5432/substrate
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/app/chroma_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUBSTRATE_API_URL: http://localhost:8000
+        NEXT_PUBLIC_APP_ID: ${NEXT_PUBLIC_APP_ID}
+    environment:
+      DATABASE_URL: postgresql://substrate:${POSTGRES_PASSWORD:-substrate_dev}@postgres:5432/substrate
+      SUBSTRATE_API_URL: http://backend:8000
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_ID: ${NEXT_PUBLIC_APP_ID}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  chroma_data:

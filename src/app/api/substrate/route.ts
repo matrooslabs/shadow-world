@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.SUBSTRATE_API_URL || process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
 
 // POST - Create a new substrate (proxies to Python backend)
 export async function POST(req: NextRequest) {

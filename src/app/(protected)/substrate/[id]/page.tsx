@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 async function getSubstrate(id: string): Promise<Substrate | null> {
-  const backendUrl = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.SUBSTRATE_API_URL || process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${backendUrl}/substrates/${id}`, {
       next: { revalidate: 30 },
