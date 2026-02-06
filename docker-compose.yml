@@ -21,12 +21,15 @@ services:
     environment:
       DATABASE_URL: postgresql://substrate:${POSTGRES_PASSWORD:-substrate_dev}@postgres:5432/substrate
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      TWITTER_CLIENT_ID: ${TWITTER_CLIENT_ID}
+      TWITTER_CLIENT_SECRET: ${TWITTER_CLIENT_SECRET}
+      TWITTER_REDIRECT_URI: ${TWITTER_REDIRECT_URI:-http://localhost:3000/oauth/callback}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
     ports:
       - "8000:8000"
-    volumes:
-      - chroma_data:/app/chroma_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,4 +56,3 @@ services:
 
 volumes:
   postgres_data:
-  chroma_data:
