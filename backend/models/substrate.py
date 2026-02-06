@@ -14,6 +14,12 @@ class SubstrateStatus(str, PyEnum):
     FAILED = "failed"
 
 
+class VoiceStatus(str, PyEnum):
+    PENDING = "pending"
+    READY = "ready"
+    FAILED = "failed"
+
+
 class Substrate(Base):
     __tablename__ = "substrates"
 
@@ -27,6 +33,11 @@ class Substrate(Base):
     extraction_progress = Column(String, default="0")  # 0-100
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Voice cloning
+    voice_id = Column(String, nullable=True)
+    voice_status = Column(Enum(VoiceStatus), nullable=True)
+    voice_name = Column(String, nullable=True)
 
     # Relationships
     social_accounts = relationship("SocialAccount", back_populates="substrate", cascade="all, delete-orphan")
@@ -44,4 +55,7 @@ class Substrate(Base):
             "status": self.status.value if self.status else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "voice_id": self.voice_id,
+            "voice_status": self.voice_status.value if self.voice_status else None,
+            "voice_name": self.voice_name,
         }

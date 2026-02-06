@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from db import get_db
-from models import Substrate, SubstrateStatus, ChatSession, ChatMessage, MessageRole
+from models import Substrate, SubstrateStatus, VoiceStatus, ChatSession, ChatMessage, MessageRole
 from agents import ChatAgent
+from services import VoiceService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["chat"])
 
@@ -20,6 +26,7 @@ class ChatMessageResponse(BaseModel):
     role: str
     content: str
     created_at: str
+    audio_base64: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -29,6 +36,7 @@ class ChatMessageResponse(BaseModel):
 async def send_chat_message(
     substrate_id: str,
     request: ChatRequest,
+    voice: bool = Query(False),
     db: AsyncSession = Depends(get_db),
 ):
     """Send a message to chat with a substrate."""
@@ -109,7 +117,22 @@ async def send_chat_message(
     await db.commit()
     await db.refresh(assistant_message)
 
-    return ChatMessageResponse(**assistant_message.to_dict())
+    response = ChatMessageResponse(**assistant_message.to_dict())
+
+    # Generate voice audio if requested
+    if voice:
+        if substrate.voice_status != VoiceStatus.READY or not substrate.voice_id:
+            raise HTTPException(status_code=400, detail="Voice is not ready")
+        try:
+            service = VoiceService()
+            response.audio_base64 = service.text_to_speech_base64(
+                substrate.voice_id, response_content
+            )
+        except Exception as e:
+            logger.error(f"TTS failed for substrate {substrate_id}: {e}")
+            # Graceful degradation: return text response without audio
+
+    return response
 
 
 @router.get("/substrates/{substrate_id}/chat/history", response_model=list[ChatMessageResponse])

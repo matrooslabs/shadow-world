@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str
 
+    # ElevenLabs
+    elevenlabs_api_key: str = ""
+
     # Twitter OAuth 2.0
     twitter_client_id: str = ""
     twitter_client_secret: str = ""
