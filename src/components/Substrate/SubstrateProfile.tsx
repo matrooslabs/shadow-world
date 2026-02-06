@@ -7,13 +7,13 @@ import Link from 'next/link';
 
 interface SubstrateProfileProps {
   substrate: Substrate;
-  endorsementCount: number;
+  isVerified: boolean;
   isOwner: boolean;
 }
 
 export function SubstrateProfile({
   substrate,
-  endorsementCount,
+  isVerified,
   isOwner,
 }: SubstrateProfileProps) {
   return (
@@ -41,12 +41,19 @@ export function SubstrateProfile({
         <p className="text-gray-600 text-center mt-2 max-w-sm">{substrate.bio}</p>
       )}
 
-      {/* Stats */}
+      {/* Verification Status */}
       <div className="flex items-center gap-6 mt-4">
-        <div className="flex items-center gap-1 text-sm text-gray-600">
-          <BadgeCheck className="w-4 h-4" />
-          <span>{endorsementCount} endorsements</span>
-        </div>
+        {isVerified ? (
+          <div className="flex items-center gap-1 text-sm text-green-600">
+            <BadgeCheck className="w-4 h-4" />
+            <span>Verified Agent</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-sm text-gray-400">
+            <BadgeCheck className="w-4 h-4" />
+            <span>Not Verified</span>
+          </div>
+        )}
       </div>
 
       {/* Personality Profile */}

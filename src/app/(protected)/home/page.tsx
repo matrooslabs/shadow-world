@@ -86,9 +86,9 @@ export default async function Home() {
                 <span className="text-sm font-semibold text-blue-600">3</span>
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Get Endorsed</h3>
+                <h3 className="font-medium text-gray-900">Verify Your Agent</h3>
                 <p className="text-sm text-gray-600">
-                  Others can verify authenticity with World ID
+                  Prove your agent is backed by a real human with World ID
                 </p>
               </div>
             </div>

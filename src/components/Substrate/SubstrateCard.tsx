@@ -2,11 +2,11 @@
 
 import { Substrate } from '@/lib/substrate-api';
 import { CircularIcon } from '@worldcoin/mini-apps-ui-kit-react';
-import { CheckCircle, User } from 'iconoir-react';
+import { BadgeCheck, CheckCircle, User } from 'iconoir-react';
 import Link from 'next/link';
 
 interface SubstrateCardProps {
-  substrate: Substrate & { endorsement_count?: number };
+  substrate: Substrate & { is_verified?: boolean };
 }
 
 export function SubstrateCard({ substrate }: SubstrateCardProps) {
@@ -56,10 +56,10 @@ export function SubstrateCard({ substrate }: SubstrateCardProps) {
                 {substrate.status}
               </span>
 
-              {substrate.endorsement_count !== undefined && (
-                <span className="text-xs text-gray-500">
-                  {substrate.endorsement_count} endorsement
-                  {substrate.endorsement_count !== 1 ? 's' : ''}
+              {substrate.is_verified && (
+                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                  <BadgeCheck className="w-3 h-3" />
+                  Verified
                 </span>
               )}
             </div>

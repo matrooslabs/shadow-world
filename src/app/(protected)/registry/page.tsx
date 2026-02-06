@@ -3,7 +3,7 @@ import { Page } from '@/components/PageLayout';
 import { Substrate } from '@/lib/substrate-api';
 import { TopBar } from '@worldcoin/mini-apps-ui-kit-react';
 
-async function getSubstrates(): Promise<(Substrate & { endorsement_count?: number })[]> {
+async function getSubstrates(): Promise<(Substrate & { is_verified?: boolean })[]> {
   const backendUrl = process.env.NEXT_PUBLIC_SUBSTRATE_API_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${backendUrl}/substrates`, {

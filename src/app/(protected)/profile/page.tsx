@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { SubstrateCard } from '@/components/Substrate';
 import { Page } from '@/components/PageLayout';
 import { SignOutButton } from '@/components/SignOutButton';
+import { prisma } from '@/lib/prisma';
 import { Substrate } from '@/lib/substrate-api';
 import { Button, CircularIcon, Marble, TopBar } from '@worldcoin/mini-apps-ui-kit-react';
 import { Plus, User } from 'iconoir-react';
@@ -39,6 +40,18 @@ export default async function ProfilePage() {
 
   const { walletAddress, username, profilePictureUrl } = session.user;
   const substrates = await getUserSubstrates(walletAddress);
+
+  // Enrich substrates with verification status
+  const substrateIds = substrates.map((s) => s.id);
+  const verifications = await prisma.verification.findMany({
+    where: { substrateId: { in: substrateIds } },
+    select: { substrateId: true },
+  });
+  const verifiedIds = new Set(verifications.map((v) => v.substrateId));
+  const enrichedSubstrates = substrates.map((s) => ({
+    ...s,
+    is_verified: verifiedIds.has(s.id),
+  }));
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -95,7 +108,7 @@ export default async function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {substrates.map((substrate) => (
+              {enrichedSubstrates.map((substrate) => (
                 <SubstrateCard key={substrate.id} substrate={substrate} />
               ))}
             </div>

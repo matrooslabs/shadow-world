@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - List substrates (proxies to Python backend, enriches with endorsement counts)
+// GET - List substrates (proxies to Python backend, enriches with verification status)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const ownerWallet = searchParams.get('owner_wallet');
@@ -93,21 +93,18 @@ export async function GET(req: NextRequest) {
 
     const substrates = await backendRes.json();
 
-    // Enrich with endorsement counts
+    // Enrich with verification status
     const substrateIds = substrates.map((s: { id: string }) => s.id);
-    const endorsementCounts = await prisma.endorsement.groupBy({
-      by: ['substrateId'],
+    const verifications = await prisma.verification.findMany({
       where: { substrateId: { in: substrateIds } },
-      _count: { id: true },
+      select: { substrateId: true },
     });
 
-    const countMap = new Map(
-      endorsementCounts.map((e: { substrateId: string; _count: { id: number } }) => [e.substrateId, e._count.id])
-    );
+    const verifiedIds = new Set(verifications.map((v) => v.substrateId));
 
     const enrichedSubstrates = substrates.map((s: { id: string }) => ({
       ...s,
-      endorsement_count: countMap.get(s.id) || 0,
+      is_verified: verifiedIds.has(s.id),
     }));
 
     return NextResponse.json(enrichedSubstrates);

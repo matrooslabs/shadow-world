@@ -1,11 +1,11 @@
 import { auth } from '@/auth';
-import { EndorseButton, EndorsementList } from '@/components/Endorsement';
 import { Page } from '@/components/PageLayout';
 import { SubstrateProfile } from '@/components/Substrate';
+import { VerifyAgentButton } from '@/components/Verification';
 import { prisma } from '@/lib/prisma';
 import { Substrate } from '@/lib/substrate-api';
 import { TopBar } from '@worldcoin/mini-apps-ui-kit-react';
-import { ArrowLeft } from 'iconoir-react';
+import { ArrowLeft, BadgeCheck } from 'iconoir-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -26,42 +26,15 @@ async function getSubstrate(id: string): Promise<Substrate | null> {
   }
 }
 
-interface EndorsementWithEndorser {
-  id: string;
-  substrateId: string;
-  endorserWallet: string;
-  nullifierHash: string;
-  merkleRoot: string;
-  proof: string;
-  verificationLevel: string;
-  createdAt: Date;
-  endorser: {
-    walletAddress: string;
-    username: string | null;
-  };
-}
-
-async function getEndorsements(substrateId: string) {
-  const endorsements = await prisma.endorsement.findMany({
+async function getVerificationStatus(substrateId: string) {
+  const verification = await prisma.verification.findUnique({
     where: { substrateId },
-    include: {
-      endorser: {
-        select: {
-          walletAddress: true,
-          username: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  }) as EndorsementWithEndorser[];
+  });
 
-  const stats = {
-    total: endorsements.length,
-    orb: endorsements.filter((e: EndorsementWithEndorser) => e.verificationLevel === 'orb').length,
-    device: endorsements.filter((e: EndorsementWithEndorser) => e.verificationLevel === 'device').length,
+  return {
+    isVerified: !!verification,
+    verifiedAt: verification?.createdAt?.toISOString() || null,
   };
-
-  return { endorsements, stats };
 }
 
 export default async function SubstrateProfilePage({ params }: PageProps) {
@@ -73,14 +46,9 @@ export default async function SubstrateProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  const { endorsements, stats } = await getEndorsements(id);
+  const { isVerified, verifiedAt } = await getVerificationStatus(id);
 
   const isOwner = session?.user?.walletAddress === substrate.owner_wallet;
-
-  // Check if the current user has already endorsed
-  const hasEndorsed = session?.user
-    ? endorsements.some((e) => e.endorser.walletAddress === session.user.walletAddress)
-    : false;
 
   return (
     <>
@@ -99,39 +67,28 @@ export default async function SubstrateProfilePage({ params }: PageProps) {
         {/* Profile Section */}
         <SubstrateProfile
           substrate={substrate}
-          endorsementCount={stats.total}
+          isVerified={isVerified}
           isOwner={isOwner}
         />
 
-        {/* Endorse Button */}
-        {!isOwner && !hasEndorsed && substrate.status === 'ready' && (
-          <EndorseButton substrateId={id} />
+        {/* Verify Button - only shown to owner when substrate is ready */}
+        {isOwner && substrate.status === 'ready' && (
+          <VerifyAgentButton
+            substrateId={id}
+            isVerified={isVerified}
+            verifiedAt={verifiedAt}
+          />
         )}
 
-        {hasEndorsed && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <p className="text-green-700">
-              You have endorsed this substrate
+        {/* Verified info for non-owners */}
+        {!isOwner && isVerified && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-2">
+            <BadgeCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-sm text-green-700">
+              This agent is verified with World ID — backed by a real human.
             </p>
           </div>
         )}
-
-        {/* Endorsements Section */}
-        <div>
-          <h2 className="font-semibold text-gray-900 mb-3">Endorsements</h2>
-          <EndorsementList
-            endorsements={endorsements.map((e) => ({
-              id: e.id,
-              verificationLevel: e.verificationLevel,
-              createdAt: e.createdAt.toISOString(),
-              endorser: {
-                walletAddress: e.endorser.walletAddress,
-                username: e.endorser.username,
-              },
-            }))}
-            stats={stats}
-          />
-        </div>
       </Page.Main>
     </>
   );

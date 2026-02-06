@@ -227,8 +227,8 @@ export default function CreatePage() {
               Substrate Created!
             </h2>
             <p className="text-gray-600 mb-6">
-              Your AI clone is ready. Share it with others and collect
-              endorsements.
+              Your AI clone is ready. Visit your profile to verify it with
+              World ID.
             </p>
             <Button onClick={handleViewSubstrate} className="w-full" size="lg">
               View Your Substrate
