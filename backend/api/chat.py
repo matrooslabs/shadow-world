@@ -96,6 +96,7 @@ async def send_chat_message(
         display_name=substrate.display_name,
         message_history=message_history,
         user_message=request.message,
+        substrate_id=substrate_id,
     )
 
     # Save assistant message

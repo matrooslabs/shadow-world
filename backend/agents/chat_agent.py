@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from config import get_settings
+from vectorstore import query_knowledge
 
 
 class ChatState(TypedDict):
@@ -12,6 +13,8 @@ class ChatState(TypedDict):
     display_name: str
     message_history: list[dict]  # Previous messages for context
     user_message: str
+    substrate_id: str
+    retrieved_context: list[str]
     response: str
 
 
@@ -30,13 +33,28 @@ class ChatAgent:
         """Build the chat graph."""
         workflow = StateGraph(ChatState)
 
+        workflow.add_node("retrieve_context", self._retrieve_context)
         workflow.add_node("generate_response", self._generate_response)
-        workflow.set_entry_point("generate_response")
+
+        workflow.set_entry_point("retrieve_context")
+        workflow.add_edge("retrieve_context", "generate_response")
         workflow.add_edge("generate_response", END)
 
         return workflow.compile()
 
-    def _build_system_prompt(self, personality_profile: dict, display_name: str) -> str:
+    def _retrieve_context(self, state: ChatState) -> ChatState:
+        """Retrieve relevant knowledge base context for the user message."""
+        substrate_id = state["substrate_id"]
+        user_message = state["user_message"]
+
+        if substrate_id:
+            context = query_knowledge(substrate_id, user_message, k=5)
+        else:
+            context = []
+
+        return {**state, "retrieved_context": context}
+
+    def _build_system_prompt(self, personality_profile: dict, display_name: str, retrieved_context: list[str]) -> str:
         """Build the system prompt from personality profile."""
         traits = personality_profile.get("traits", [])
         interests = personality_profile.get("interests", [])
@@ -52,6 +70,19 @@ class ChatAgent:
             content = agents_txt.read_text().strip()
             if content:
                 base_prompt = content + "\n\n"
+
+        # Build knowledge base section
+        knowledge_section = ""
+        if retrieved_context:
+            context_text = "\n\n---\n\n".join(retrieved_context)
+            knowledge_section = f"""
+
+KNOWLEDGE BASE:
+The following information has been provided by {display_name} as reference material. Use it to give informed, accurate answers when relevant.
+
+{context_text}
+
+"""
 
         return f"""{base_prompt}You are {display_name}'s AI clone, a digital representation of their personality based on their social media presence.
 
@@ -72,7 +103,7 @@ COMMUNICATION STYLE:
 
 SAMPLE TWEETS (use these as reference for language style, tone, and phrasing):
 {chr(10).join('- ' + t for t in sample_tweets) if sample_tweets else 'No samples available'}
-
+{knowledge_section}
 IMPORTANT GUIDELINES:
 1. Respond authentically as {display_name} would, based on the personality profile above.
 2. Mirror their communication style - if they're casual, be casual; if formal, be formal.
@@ -83,6 +114,7 @@ IMPORTANT GUIDELINES:
 7. You can admit uncertainty on topics outside your knowledge base.
 8. Never break character or acknowledge being an AI clone.
 9. If asked about personal details not in the profile, deflect naturally.
+10. When your knowledge base contains relevant information, use it to give informed answers.
 
 Remember: You ARE {display_name} in this conversation. Speak in first person as them."""
 
@@ -90,7 +122,8 @@ Remember: You ARE {display_name} in this conversation. Speak in first person as 
         """Generate a response as the substrate persona."""
         system_prompt = self._build_system_prompt(
             state["personality_profile"],
-            state["display_name"]
+            state["display_name"],
+            state["retrieved_context"],
         )
 
         # Build message history
@@ -116,6 +149,7 @@ Remember: You ARE {display_name} in this conversation. Speak in first person as 
         display_name: str,
         message_history: list[dict],
         user_message: str,
+        substrate_id: str = "",
     ) -> str:
         """Generate a chat response."""
         initial_state: ChatState = {
@@ -123,6 +157,8 @@ Remember: You ARE {display_name} in this conversation. Speak in first person as 
             "display_name": display_name,
             "message_history": message_history,
             "user_message": user_message,
+            "substrate_id": substrate_id,
+            "retrieved_context": [],
             "response": "",
         }
 

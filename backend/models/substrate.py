@@ -31,6 +31,7 @@ class Substrate(Base):
     # Relationships
     social_accounts = relationship("SocialAccount", back_populates="substrate", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="substrate", cascade="all, delete-orphan")
+    knowledge_entries = relationship("Knowledge", back_populates="substrate", cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
         return {

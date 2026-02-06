@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from config import get_settings
 from db import engine, Base
-from api import substrates_router, oauth_router, chat_router
+from api import substrates_router, oauth_router, chat_router, knowledge_router
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app.add_middleware(
 app.include_router(substrates_router)
 app.include_router(oauth_router)
 app.include_router(chat_router)
+app.include_router(knowledge_router)
 
 
 @app.get("/")
