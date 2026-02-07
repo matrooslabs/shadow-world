@@ -1,7 +1,7 @@
 'use client';
 
 import { Substrate, addKnowledge, uploadVoiceSample } from '@/lib/substrate-api';
-import { AddKnowledgeModal } from '@/components/Knowledge';
+import { AddKnowledgeModal, KnowledgeList } from '@/components/Knowledge';
 import { Button, CircularIcon } from '@worldcoin/mini-apps-ui-kit-react';
 import { ChatBubble, User, BadgeCheck, Book } from 'iconoir-react';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ export function SubstrateProfile({
   isOwner,
 }: SubstrateProfileProps) {
   const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
+  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
 
   return (
     <div className="flex flex-col items-center">
@@ -120,6 +121,14 @@ export function SubstrateProfile({
         </div>
       )}
 
+      {/* Knowledge List */}
+      {isOwner && substrate.status === 'ready' && (
+        <KnowledgeList
+          substrateId={substrate.id}
+          refreshKey={knowledgeRefreshKey}
+        />
+      )}
+
       {/* Status indicator for non-ready substrates */}
       {substrate.status !== 'ready' && (
         <div className="w-full mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
@@ -210,6 +219,7 @@ export function SubstrateProfile({
               throw new Error(errors.join('\n'));
             }
 
+            setKnowledgeRefreshKey((k) => k + 1);
             setShowKnowledgeModal(false);
           }}
         />

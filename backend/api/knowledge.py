@@ -7,6 +7,7 @@ from db import get_db
 from models import Substrate, Knowledge, KnowledgeSourceType, KnowledgeStatus
 from vectorstore import chunk_text, add_knowledge_chunks, delete_knowledge_chunks
 from fetchers import fetch_url_content
+import uuid
 
 router = APIRouter(tags=["knowledge"])
 
@@ -100,6 +101,7 @@ async def add_knowledge(
     source_type = KnowledgeSourceType(request.source_type)
 
     knowledge = Knowledge(
+        id=str(uuid.uuid4()),
         substrate_id=substrate_id,
         source_type=source_type,
         source_url=request.content if source_type == KnowledgeSourceType.URL else None,
