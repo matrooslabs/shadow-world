@@ -212,7 +212,7 @@ export function VoiceRecorder({
         }
       };
 
-      mediaRecorder.start(100); // collect data every 100ms
+      mediaRecorder.start(); // no timeslice — single blob on stop, avoids Safari chunk issues
 
       // Start timer
       timerRef.current = setInterval(() => {
