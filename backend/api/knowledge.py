@@ -11,7 +11,6 @@ from config import get_settings
 from db import get_db
 from models import Substrate, Knowledge, KnowledgeSourceType, KnowledgeStatus
 from vectorstore import chunk_text, add_knowledge_chunks, delete_knowledge_chunks
-from fetchers import fetch_url_content
 
 logger = logging.getLogger(__name__)
 
@@ -41,33 +40,59 @@ class KnowledgeResponse(BaseModel):
         from_attributes = True
 
 
-async def _extract_clean_content(raw_text: str, url: str) -> str:
-    """Use Claude to extract clean article content from raw scraped text."""
+async def _fetch_url_with_claude(url: str) -> dict:
+    """Use Claude's web fetch tool to retrieve and extract content from a URL.
+
+    Returns {"title": str|None, "content": str, "error": str|None}
+    """
     settings = get_settings()
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-    # Truncate to avoid excessive token usage
-    truncated = raw_text[:30000]
-
     response = await client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=8000,
+        max_tokens=4096,
         messages=[{
             "role": "user",
-            "content": f"""Extract the main article/page content from the following scraped web page text.
+            "content": f"""Fetch the content from this URL and extract the main article/page content as clean plain text.
 Remove navigation, ads, footers, sidebars, cookie notices, and other non-content elements.
 Return ONLY the cleaned content — no commentary, no markdown formatting, no preamble.
 Preserve the original structure (headings, paragraphs, lists) as plain text.
-If the text is already clean, return it as-is.
 
-URL: {url}
-
---- SCRAPED TEXT ---
-{truncated}""",
+URL: {url}""",
         }],
+        tools=[{
+            "type": "web_fetch_20250910",
+            "name": "web_fetch",
+            "max_uses": 1,
+            "max_content_tokens": 50000,
+        }],
+        extra_headers={
+            "anthropic-beta": "web-fetch-2025-09-10",
+        },
     )
 
-    return response.content[0].text
+    # Extract title from web_fetch_tool_result if available
+    title = None
+    has_fetch_error = None
+    for block in response.content:
+        if block.type == "web_fetch_tool_result":
+            content = block.content
+            if hasattr(content, "type") and content.type == "web_fetch_tool_error":
+                has_fetch_error = getattr(content, "error_code", "unknown_error")
+            elif hasattr(content, "content") and hasattr(content.content, "title"):
+                title = content.content.title
+
+    if has_fetch_error:
+        return {"title": None, "content": "", "error": f"Web fetch failed: {has_fetch_error}"}
+
+    # Extract Claude's text response (the cleaned content)
+    text_parts = [block.text for block in response.content if block.type == "text" and block.text.strip()]
+    content = "\n\n".join(text_parts)
+
+    if not content.strip():
+        return {"title": title, "content": "", "error": "No content extracted from URL"}
+
+    return {"title": title, "content": content, "error": None}
 
 
 async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str, db: AsyncSession):
@@ -81,7 +106,7 @@ async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str,
         return
 
     try:
-        fetched = await fetch_url_content(url)
+        fetched = await _fetch_url_with_claude(url)
 
         if fetched["error"]:
             knowledge.status = KnowledgeStatus.FAILED
@@ -89,25 +114,12 @@ async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str,
             await db.commit()
             return
 
-        if not fetched["content"].strip():
-            knowledge.status = KnowledgeStatus.FAILED
-            knowledge.error_message = "No content extracted from URL"
-            await db.commit()
-            return
-
-        # Clean content with LLM
-        try:
-            clean_content = await _extract_clean_content(fetched["content"], url)
-        except Exception as e:
-            logger.warning(f"LLM content extraction failed for {url}, using raw content: {e}")
-            clean_content = fetched["content"]
-
-        knowledge.content = clean_content
+        knowledge.content = fetched["content"]
         if fetched["title"] and not knowledge.title:
             knowledge.title = fetched["title"]
 
         # Chunk and vectorize
-        chunks = chunk_text(clean_content)
+        chunks = chunk_text(fetched["content"])
         count = add_knowledge_chunks(substrate_id, knowledge_id, chunks)
 
         knowledge.chunk_count = count
