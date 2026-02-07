@@ -241,13 +241,14 @@ export async function getSocialAccounts(substrateId: string): Promise<ApiRespons
 export async function sendChatMessage(
   substrateId: string,
   visitorWallet: string,
-  message: string
+  message: string,
+  sessionId?: string
 ): Promise<ApiResponse<ChatMessage>> {
   try {
     const response = await fetch(`${API_BASE_URL}/substrates/${substrateId}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitor_wallet: visitorWallet, message }),
+      body: JSON.stringify({ visitor_wallet: visitorWallet, message, session_id: sessionId }),
     });
 
     if (!response.ok) {

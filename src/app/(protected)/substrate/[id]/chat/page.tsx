@@ -4,7 +4,6 @@ import { ChatHistory, ChatInput } from '@/components/Chat';
 import { Page } from '@/components/PageLayout';
 import {
   ChatMessage,
-  getChatHistory,
   getSubstrate,
   sendChatMessage,
   Substrate,
@@ -14,7 +13,7 @@ import { ArrowLeft } from 'iconoir-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,18 +25,18 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sessionIdRef = useRef(crypto.randomUUID());
 
   useEffect(() => {
-    loadSubstrateAndHistory();
+    loadSubstrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, session]);
 
-  const loadSubstrateAndHistory = async () => {
+  const loadSubstrate = async () => {
     if (!session?.user?.walletAddress) return;
 
     setIsLoading(true);
 
-    // Load substrate
     const substrateResult = await getSubstrate(id);
     if (substrateResult.error || !substrateResult.data) {
       setError('Substrate not found');
@@ -47,17 +46,10 @@ export default function ChatPage() {
 
     setSubstrate(substrateResult.data);
 
-    // Check if substrate is ready
     if (substrateResult.data.status !== 'ready') {
       setError('This substrate is not ready for chat yet');
       setIsLoading(false);
       return;
-    }
-
-    // Load chat history
-    const historyResult = await getChatHistory(id, session.user.walletAddress);
-    if (historyResult.data) {
-      setMessages(historyResult.data);
     }
 
     setIsLoading(false);
@@ -81,7 +73,8 @@ export default function ChatPage() {
     const result = await sendChatMessage(
       id,
       session.user.walletAddress,
-      content
+      content,
+      sessionIdRef.current
     );
 
     if (result.error) {

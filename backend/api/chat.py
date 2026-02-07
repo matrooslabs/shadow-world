@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,6 +19,7 @@ router = APIRouter(tags=["chat"])
 class ChatRequest(BaseModel):
     visitor_wallet: str
     message: str
+    session_id: Optional[str] = None
 
 
 class ChatMessageResponse(BaseModel):
@@ -61,17 +63,17 @@ async def send_chat_message(
             detail="Substrate has no personality profile",
         )
 
-    # Get or create chat session
-    session_result = await db.execute(
-        select(ChatSession).where(
-            ChatSession.substrate_id == substrate_id,
-            ChatSession.visitor_wallet == request.visitor_wallet,
+    # Get or create chat session scoped by client-provided session_id
+    session = None
+    if request.session_id:
+        session_result = await db.execute(
+            select(ChatSession).where(ChatSession.id == request.session_id)
         )
-    )
-    session = session_result.scalar_one_or_none()
+        session = session_result.scalar_one_or_none()
 
     if not session:
         session = ChatSession(
+            id=request.session_id or str(uuid.uuid4()),
             substrate_id=substrate_id,
             visitor_wallet=request.visitor_wallet,
         )

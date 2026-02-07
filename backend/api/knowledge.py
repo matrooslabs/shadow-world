@@ -1,13 +1,19 @@
+import logging
+import uuid
+
+import anthropic
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from typing import Optional
+from config import get_settings
 from db import get_db
 from models import Substrate, Knowledge, KnowledgeSourceType, KnowledgeStatus
 from vectorstore import chunk_text, add_knowledge_chunks, delete_knowledge_chunks
 from fetchers import fetch_url_content
-import uuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["knowledge"])
 
@@ -35,6 +41,35 @@ class KnowledgeResponse(BaseModel):
         from_attributes = True
 
 
+async def _extract_clean_content(raw_text: str, url: str) -> str:
+    """Use Claude to extract clean article content from raw scraped text."""
+    settings = get_settings()
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    # Truncate to avoid excessive token usage
+    truncated = raw_text[:30000]
+
+    response = await client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=8000,
+        messages=[{
+            "role": "user",
+            "content": f"""Extract the main article/page content from the following scraped web page text.
+Remove navigation, ads, footers, sidebars, cookie notices, and other non-content elements.
+Return ONLY the cleaned content — no commentary, no markdown formatting, no preamble.
+Preserve the original structure (headings, paragraphs, lists) as plain text.
+If the text is already clean, return it as-is.
+
+URL: {url}
+
+--- SCRAPED TEXT ---
+{truncated}""",
+        }],
+    )
+
+    return response.content[0].text
+
+
 async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str, db: AsyncSession):
     """Background task to fetch URL content and vectorize it."""
     result = await db.execute(
@@ -60,12 +95,19 @@ async def _process_url_knowledge(knowledge_id: str, url: str, substrate_id: str,
             await db.commit()
             return
 
-        knowledge.content = fetched["content"]
+        # Clean content with LLM
+        try:
+            clean_content = await _extract_clean_content(fetched["content"], url)
+        except Exception as e:
+            logger.warning(f"LLM content extraction failed for {url}, using raw content: {e}")
+            clean_content = fetched["content"]
+
+        knowledge.content = clean_content
         if fetched["title"] and not knowledge.title:
             knowledge.title = fetched["title"]
 
         # Chunk and vectorize
-        chunks = chunk_text(fetched["content"])
+        chunks = chunk_text(clean_content)
         count = add_knowledge_chunks(substrate_id, knowledge_id, chunks)
 
         knowledge.chunk_count = count
