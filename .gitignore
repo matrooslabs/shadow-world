@@ -53,6 +53,7 @@ backend/.venv/
 backend/venv/
 backend/.env
 backend/*.db
+backend/chroma_data/
 
 # Prisma
 prisma/dev.db

@@ -13,7 +13,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@elevenlabs/react": "^0.14.0",
     "@worldcoin/mini-apps-ui-kit-react": "^1.0.2",
     "@worldcoin/minikit-js": "latest",
     "@worldcoin/minikit-react": "latest",

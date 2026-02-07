@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,9 +7,6 @@ from db import get_db
 from models import Substrate, SubstrateStatus, SocialAccount
 from agents import ExtractionAgent
 from fetchers import TwitterFetcher
-from services import AgentService
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/substrates", tags=["substrates"])
 
@@ -30,7 +25,6 @@ class SubstrateResponse(BaseModel):
     avatar_url: Optional[str]
     personality_profile: Optional[dict]
     status: str
-    agent_id: Optional[str] = None
     created_at: str
     updated_at: str
 
@@ -189,21 +183,6 @@ async def run_extraction(substrate_id: str, db: AsyncSession):
                 "_normal", ""
             )
 
-        # Create ElevenLabs Conversational AI agent
-        try:
-            agent_service = AgentService()
-            agent_id = agent_service.create_agent(
-                name=f"{substrate.display_name} Agent",
-                personality_profile=personality_profile,
-                display_name=substrate.display_name,
-                voice_id=substrate.voice_id,
-            )
-            substrate.agent_id = agent_id
-            logger.info(f"Created ElevenLabs agent {agent_id} for substrate {substrate_id}")
-        except Exception as e:
-            logger.error(f"Failed to create ElevenLabs agent for substrate {substrate_id}: {e}")
-            # Non-fatal: substrate is still READY, just without an agent
-
         await db.commit()
 
     except Exception as e:
@@ -247,41 +226,3 @@ async def trigger_extraction(
     background_tasks.add_task(run_extraction, substrate_id, db)
 
     return {"message": "Extraction started"}
-
-
-@router.delete("/{substrate_id}")
-async def delete_substrate(
-    substrate_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """Delete a substrate and clean up associated ElevenLabs resources."""
-    result = await db.execute(
-        select(Substrate).where(Substrate.id == substrate_id)
-    )
-    substrate = result.scalar_one_or_none()
-
-    if not substrate:
-        raise HTTPException(status_code=404, detail="Substrate not found")
-
-    # Clean up ElevenLabs agent
-    if substrate.agent_id:
-        try:
-            agent_service = AgentService()
-            agent_service.delete_agent(substrate.agent_id)
-        except Exception as e:
-            logger.warning(f"Failed to delete ElevenLabs agent {substrate.agent_id}: {e}")
-
-    # Clean up voice clone
-    if substrate.voice_id:
-        try:
-            from services import VoiceService
-            voice_service = VoiceService()
-            voice_service.delete_voice(substrate.voice_id)
-        except Exception as e:
-            logger.warning(f"Failed to delete voice {substrate.voice_id}: {e}")
-
-    # DB cascade handles Knowledge model rows
-    await db.delete(substrate)
-    await db.commit()
-
-    return {"status": "deleted", "id": substrate_id}

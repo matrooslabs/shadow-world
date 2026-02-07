@@ -34,9 +34,6 @@ class Substrate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # ElevenLabs Conversational AI Agent
-    agent_id = Column(String, nullable=True)
-
     # Voice cloning
     voice_id = Column(String, nullable=True)
     voice_status = Column(Enum(VoiceStatus), nullable=True)
@@ -44,6 +41,7 @@ class Substrate(Base):
 
     # Relationships
     social_accounts = relationship("SocialAccount", back_populates="substrate", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="substrate", cascade="all, delete-orphan")
     knowledge_entries = relationship("Knowledge", back_populates="substrate", cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
@@ -57,7 +55,6 @@ class Substrate(Base):
             "status": self.status.value if self.status else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "agent_id": self.agent_id,
             "voice_id": self.voice_id,
             "voice_status": self.voice_status.value if self.voice_status else None,
             "voice_name": self.voice_name,

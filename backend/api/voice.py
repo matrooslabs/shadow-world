@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from db import get_db
 from models import Substrate, VoiceStatus
-from services import VoiceService, AgentService
+from services import VoiceService
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +44,6 @@ async def _create_voice_clone(substrate_id: str, audio_path: str, voice_name: st
             substrate.voice_id = voice_id
             substrate.voice_status = VoiceStatus.READY
             await db.commit()
-
-            # Attach voice to ElevenLabs agent if it exists
-            if substrate.agent_id:
-                try:
-                    agent_service = AgentService()
-                    agent_service.update_agent(substrate.agent_id, voice_id=voice_id)
-                except Exception as e:
-                    logger.warning(f"Failed to attach voice to agent {substrate.agent_id}: {e}")
     except Exception as e:
         logger.error(f"Voice clone creation failed for substrate {substrate_id}: {e}")
         result = await db.execute(
