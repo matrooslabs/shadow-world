@@ -1,0 +1,1 @@
+export { ShadowProfileCard } from './ShadowProfileCard';

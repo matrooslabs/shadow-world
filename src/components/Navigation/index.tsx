@@ -1,19 +1,19 @@
 'use client';
 
 import { TabItem, Tabs } from '@worldcoin/mini-apps-ui-kit-react';
-import { Home, List, Plus, User } from 'iconoir-react';
+import { Community, Home, Plus, User } from 'iconoir-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 /**
  * Bottom navigation for the Substrate mini app
- * 4 tabs: Home, Create, Registry, Profile
+ * 4 tabs: Home, Create, Community, Profile
  */
 
 const tabs = [
   { value: 'home', icon: <Home />, label: 'Home', path: '/home' },
   { value: 'create', icon: <Plus />, label: 'Create', path: '/create' },
-  { value: 'registry', icon: <List />, label: 'Registry', path: '/registry' },
+  { value: 'community', icon: <Community />, label: 'Community', path: '/community' },
   { value: 'profile', icon: <User />, label: 'Profile', path: '/profile' },
 ];
 

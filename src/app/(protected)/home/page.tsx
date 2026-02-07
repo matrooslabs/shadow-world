@@ -103,7 +103,7 @@ export default async function Home() {
                 Featured Shadows
               </h2>
               <Link
-                href="/registry"
+                href="/community"
                 className="text-sm text-blue-600 flex items-center gap-1"
               >
                 View all <ArrowRight className="w-4 h-4" />

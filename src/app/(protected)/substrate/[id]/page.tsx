@@ -56,7 +56,7 @@ export default async function SubstrateProfilePage({ params }: PageProps) {
         <TopBar
           title={substrate.display_name}
           startAdornment={
-            <Link href="/registry" className="p-2 -ml-2">
+            <Link href="/community" className="p-2 -ml-2">
               <ArrowLeft className="w-6 h-6" />
             </Link>
           }
