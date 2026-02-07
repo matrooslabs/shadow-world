@@ -1,5 +1,6 @@
 import { SubstrateCard } from '@/components/Substrate';
 import { Page } from '@/components/PageLayout';
+import { prisma } from '@/lib/prisma';
 import { Substrate } from '@/lib/substrate-api';
 import { TopBar } from '@worldcoin/mini-apps-ui-kit-react';
 
@@ -17,10 +18,17 @@ async function getSubstrates(): Promise<(Substrate & { is_verified?: boolean })[
 }
 
 export default async function RegistryPage() {
-  const substrates = await getSubstrates();
+  const [substrates, verifications] = await Promise.all([
+    getSubstrates(),
+    prisma.verification.findMany({ select: { substrateId: true } }),
+  ]);
 
-  // Filter to only show ready substrates
-  const readySubstrates = substrates.filter((s) => s.status === 'ready');
+  const verifiedIds = new Set(verifications.map((v) => v.substrateId));
+
+  // Filter to only show verified, ready substrates
+  const readySubstrates = substrates.filter(
+    (s) => s.status === 'ready' && verifiedIds.has(s.id)
+  );
 
   return (
     <>
@@ -67,14 +75,6 @@ export default async function RegistryPage() {
           </div>
         )}
 
-        {/* Show pending substrates count if any */}
-        {substrates.length > readySubstrates.length && (
-          <p className="text-center text-sm text-gray-500">
-            {substrates.length - readySubstrates.length} Shadow
-            {substrates.length - readySubstrates.length !== 1 ? 's' : ''} in
-            progress...
-          </p>
-        )}
       </Page.Main>
     </>
   );
